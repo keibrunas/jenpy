@@ -22,6 +22,9 @@ spec:
       - name: jenkins
         image: ${IMAGE_URL}           # Injected by our script
         imagePullPolicy: Always
+        env:
+        - name: PROJECT_ID
+          value: "${PROJECT_ID}"      # Injected by our script
         ports:
         - containerPort: 8080
         - containerPort: 50000
