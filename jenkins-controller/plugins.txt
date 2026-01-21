@@ -1,0 +1,11 @@
+kubernetes
+workflow-aggregator
+git
+configuration-as-code
+google-oauth-plugin
+google-source-plugin
+credentials-binding
+timestamper
+ws-cleanup
+blueocean
+job-dsl

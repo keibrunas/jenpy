@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      securityContext:           # <--- ADD THIS BLOCK
+        fsGroup: 1000            # <--- This fixes the volume permissions
+        runAsUser: 1000          # <--- Ensures Jenkins runs as user 1000
+        runAsGroup: 1000         # <--- Ensures Jenkins runs as group 1000
+      serviceAccountName: jenkins-sa
+      containers:
+      - name: jenkins
+        image: ${IMAGE_URL}           # Injected by our script
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        - containerPort: 50000
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1024Mi"
+          limits:
+            cpu: "1000m"
+            memory: "2048Mi"
+      volumes:
+      - name: jenkins-home
+        persistentVolumeClaim:
+          claimName: jenkins-pvc

@@ -1,0 +1,58 @@
+import os
+import datetime
+from google.cloud import bigquery
+
+# 1. Get Config from Environment Variables (injected by Jenkins)
+PROJECT_ID = os.environ.get("PROJECT_ID")
+DATASET_ID = "jenkins_demo_db"
+TABLE_ID = "build_logs"
+
+client = bigquery.Client(project=PROJECT_ID)
+
+def run_demo():
+    print(f"🚀 Connecting to BigQuery project: {PROJECT_ID}")
+
+    # 2. Create Dataset if not exists
+    dataset_ref = client.dataset(DATASET_ID)
+    try:
+        client.get_dataset(dataset_ref)
+        print(f"✅ Dataset {DATASET_ID} exists.")
+    except Exception:
+        print(f"📦 Creating Dataset {DATASET_ID}...")
+        client.create_dataset(dataset_ref)
+
+    # 3. Define Table Schema
+    table_ref = dataset_ref.table(TABLE_ID)
+    schema = [
+        bigquery.SchemaField("build_id", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("timestamp", "TIMESTAMP", mode="REQUIRED"),
+        bigquery.SchemaField("status", "STRING", mode="REQUIRED"),
+    ]
+
+    # 4. Create Table if not exists
+    try:
+        client.get_table(table_ref)
+        print(f"✅ Table {TABLE_ID} exists.")
+    except Exception:
+        print(f"📄 Creating Table {TABLE_ID}...")
+        table = bigquery.Table(table_ref, schema=schema)
+        client.create_table(table)
+
+    # 5. Insert a Row
+    rows_to_insert = [
+        {
+            "build_id": os.environ.get("BUILD_NUMBER", "DEV-1"),
+            "timestamp": datetime.datetime.now().isoformat(),
+            "status": "SUCCESS"
+        }
+    ]
+    errors = client.insert_rows_json(table_ref, rows_to_insert)
+    
+    if errors:
+        print(f"❌ Error inserting rows: {errors}")
+        exit(1)
+    else:
+        print(f"🎉 Successfully inserted 1 row into {DATASET_ID}.{TABLE_ID}")
+
+if __name__ == "__main__":
+    run_demo()

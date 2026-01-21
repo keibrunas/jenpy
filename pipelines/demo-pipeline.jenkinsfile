@@ -1,0 +1,49 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: python-worker
+spec:
+  serviceAccountName: jenkins-sa   # <--- CRITICAL: Uses Workload Identity
+  containers:
+  - name: python
+    image: python:3.9-slim
+    command:
+    - cat
+    tty: true
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+"""
+        }
+    }
+    
+    environment {
+        // We inject the Project ID so Python knows where to connect
+        PROJECT_ID = "${env.PROJECT_ID}" 
+    }
+
+    stages {
+        stage('Install Deps') {
+            steps {
+                container('python') {
+                    sh 'pip install -r app/requirements.txt'
+                }
+            }
+        }
+        
+        stage('Run BigQuery App') {
+            steps {
+                container('python') {
+                    // Inject the current Project ID dynamically
+                    sh "export PROJECT_ID=${PROJECT_ID} && python app/main.py"
+                }
+            }
+        }
+    }
+}
