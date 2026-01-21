@@ -1,0 +1,25 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: jenkins-manager-role
+  namespace: jenkins
+rules:
+# Allow managing Pods (for agents) and Logs
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "pods/log", "events"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: jenkins-manager-binding
+  namespace: jenkins
+subjects:
+- kind: ServiceAccount
+  name: jenkins-sa
+  namespace: jenkins
+roleRef:
+  kind: Role
+  name: jenkins-manager-role
+  apiGroup: rbac.authorization.k8s.io
