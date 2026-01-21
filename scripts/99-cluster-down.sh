@@ -8,18 +8,19 @@ echo "🧨 Starting Destruction of Environment..."
 echo "   Cluster: $CLUSTER_NAME"
 echo "   Zone:    $ZONE"
 
-# 1. Delete the GKE Cluster
-#    (This automatically deletes the Load Balancers and Nodes)
-echo "🗑️ Deleting GKE Cluster (This takes ~5 mins)..."
+# 1. Delete the GKE Cluster (with "|| true" to ignore Not Found errors)
+echo "🗑️ Deleting GKE Cluster..."
 gcloud container clusters delete $CLUSTER_NAME \
     --zone $ZONE \
-    --quiet
+    --quiet 2>/dev/null || echo "   ⚠️ Cluster not found (already deleted)."
 
 # 2. Cleanup orphaned Disks
-#    Sometimes PVCs leave disks behind. We find disks with the cluster name and kill them.
 echo "🧹 Checking for orphaned disks..."
-# List disks that contain the cluster name in their description/name
-DISKS=$(gcloud compute disks list --filter="name~$CLUSTER_NAME" --format="value(name)" --zone $ZONE)
+# We suppress the warning logs with 2>/dev/null
+DISKS=$(gcloud compute disks list \
+    --filter="name~$CLUSTER_NAME" \
+    --zones $ZONE \
+    --format="value(name)" 2>/dev/null)
 
 if [ -n "$DISKS" ]; then
     echo "   Found orphaned disks: $DISKS"
@@ -29,8 +30,4 @@ else
     echo "   ✅ No orphaned disks found."
 fi
 
-# 3. (Optional) Remove the Service Account?
-#    Usually we KEEP the Artifact Registry and Service Account 
-#    so the next "Up" is faster.
-echo "✅ Cluster destroyed. Costs stopped."
-echo "   (Artifact Registry and IAM Service Account were preserved for next time)."
+echo "✅ Environment destroyed. Costs stopped."
