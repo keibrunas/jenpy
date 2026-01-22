@@ -41,7 +41,7 @@ spec:
             steps {
                 container('python') {
                     // Inject the current Project ID dynamically
-                    sh "export PROJECT_ID=${PROJECT_ID} && python app/main.py"
+                    sh "export PROJECT_ID=${PROJECT_ID} && python app/demo-pipeline.py"
                 }
             }
         }
