@@ -1,8 +1,3 @@
-Here is the complete content for both files, formatted in beautiful Markdown as requested.
-
-### 📄 File 1: `README.md`
-
-```markdown
 # 🚀 jenpy: Ephemeral Jenkins on GKE (Spot Instances)
 
 [![GCP](https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=google-cloud&logoColor=white)](https://cloud.google.com/)
@@ -15,6 +10,22 @@ Here is the complete content for both files, formatted in beautiful Markdown as 
 This project uses **Spot VM instances** to minimize costs and **Jenkins Configuration as Code (JCasC)** to eliminate manual UI setup. Pipelines, credentials, and cloud connections are pre-baked into the Docker image.
 
 ---
+
+## 🏗 Architecture
+
+```mermaid
+graph TD
+    User((User)) -->|HTTPS| IAP[Identity Aware Proxy / Tunnel]
+    subgraph "Google Kubernetes Engine (Spot Instances)"
+        IAP -->|Port 8080| JC[Jenkins Controller]
+        JC -->|Spawns| JA[Jenkins Agent Pod]
+        JA -->|Runs| Job[Python Workload]
+    end
+    JC -.->|Read| AR[Artifact Registry]
+    JA -.->|Write| BQ[BigQuery]
+    
+    style JC fill:#D24939,stroke:#333,stroke-width:2px,color:white
+    style JA fill:#326CE5,stroke:#333,stroke-width:2px,color:white
 
 ## 🏗 Architecture
 
@@ -171,13 +182,6 @@ kubectl port-forward svc/jenkins-service 9090:80 -n jenkins
 
 ```
 
-```
-
-***
-
-### 📄 File 2: `MANUAL_STEPS.md`
-
-```markdown
 # 🛠 Manual Configuration Guide
 
 This guide documents the manual steps to configure Jenkins if the **JCasC automation is disabled or fails**.
@@ -244,5 +248,3 @@ This guide documents the manual steps to configure Jenkins if the **JCasC automa
     * **Name:** `PROJECT_ID`
     * **Value:** `your-actual-gcp-project-id`
 4. Click **Save**.
-
-```
