@@ -91,3 +91,25 @@ jobs:
           }
         }
       }
+
+  - script: >
+      multibranchPipelineJob('Pull-Request-CI') {
+        description('Automatically checks PRs and Branches')
+        branchSources {
+          git {
+            id('github-git')
+            remote('https://github.com/${GITHUB_USER}/jenpy.git')
+            credentialsId('github-access-token')
+            includes('*') # Check all branches
+          }
+        }
+        // Check for changes every 1 minute (Simulates a webhook)
+        triggers {
+            periodic(1)
+        }
+        factory {
+            workflowBranchProjectFactory {
+                scriptPath('pipelines/ci-pr-check.jenkinsfile')
+            }
+        }
+      }

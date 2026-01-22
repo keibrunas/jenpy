@@ -1,0 +1,45 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: python-tester
+spec:
+  serviceAccountName: jenkins-sa
+  containers:
+  - name: python
+    image: python:3.11-slim
+    command:
+    - cat
+    tty: true
+"""
+        }
+    }
+
+    stages {
+        stage('Install Deps') {
+            steps {
+                container('python') {
+                    sh 'pip install --no-cache-dir -r requirements.txt'
+                }
+            }
+        }
+
+        stage('Test Python App') {
+            // ONLY run this stage if .py files changed
+            when {
+                changeset "**/*.py"
+            }
+            steps {
+                container('python') {
+                    echo "🐍 Python changes detected. Running Tests..."
+                    // Run pytest and output results
+                    sh 'pytest tests/ -v'
+                }
+            }
+        }
+    }
+}
