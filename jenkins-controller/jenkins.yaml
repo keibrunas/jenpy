@@ -1,24 +1,20 @@
 jenkins:
   systemMessage: "🚀 Ephemeral Jenkins configured via JCasC"
-  # ✅ FIX: This line solves the "Built-in node" security warning
   numExecutors: 0
   mode: NORMAL
   
-  # 1. Global Environment Variables
   globalNodeProperties:
     - envVars:
         env:
           - key: "PROJECT_ID"
             value: "${PROJECT_ID}"
   
-  # 2. Clouds (Kubernetes Agent Configuration)
   clouds:
     - kubernetes:
         name: "kubernetes"
         serverUrl: "https://kubernetes.default.svc"
         skipTlsVerify: true
         namespace: "jenkins"
-        # ✅ VERIFIED: Correct Internal DNS (Port 80)
         jenkinsUrl: "http://jenkins-service.jenkins.svc.cluster.local"
         jenkinsTunnel: "jenkins-service.jenkins.svc.cluster.local:50000"
         containerCapStr: "10"
@@ -29,14 +25,12 @@ jenkins:
             nodeUsageMode: "NORMAL"
             containers:
               - name: "jnlp"
-                # Recommended: Pin this to a specific version if 'latest' breaks
                 image: "jenkins/inbound-agent:latest" 
-                resourceRequestCpu: "250m"   # Optimized for Spot instances
+                resourceRequestCpu: "250m"
                 resourceRequestMemory: "256Mi"
                 resourceLimitCpu: "1"
                 resourceLimitMemory: "1Gi"
 
-# 3. Credentials
 credentials:
   system:
     domainCredentials:
@@ -48,12 +42,10 @@ credentials:
               password: "${GITHUB_TOKEN}"
               description: "GitHub Token (Auto-injected)"
 
-# 4. Security
 security:
   globalJobDslSecurityConfiguration:
     useScriptSecurity: false
 
-# 5. Pre-configured Jobs
 jobs:
   - script: >
       pipelineJob('BigQuery-Demo') {
@@ -72,7 +64,7 @@ jobs:
           }
         }
       }
-  
+
   - script: >
       pipelineJob('Create-Table-Tool') {
         description('Utility job to create BigQuery tables using a defined JSON schema.')
@@ -100,12 +92,12 @@ jobs:
             id('github-git')
             remote('https://github.com/${GITHUB_USER}/jenpy.git')
             credentialsId('github-access-token')
-            includes('*') # Check all branches
           }
         }
-        // Check for changes every 1 minute (Simulates a webhook)
         triggers {
-            periodic(1)
+            periodicFolderTrigger {
+                interval('1m')
+            }
         }
         factory {
             workflowBranchProjectFactory {
