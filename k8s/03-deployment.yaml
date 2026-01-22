@@ -25,6 +25,10 @@ spec:
         env:
         - name: PROJECT_ID
           value: "${PROJECT_ID}"      # Injected by our script
+        - name: GITHUB_USER
+          value: "${GITHUB_USER}"
+        - name: GITHUB_TOKEN
+          value: "${GITHUB_TOKEN}"
         ports:
         - containerPort: 8080
         - containerPort: 50000

@@ -1,0 +1,22 @@
+# .gitignore
+
+# 🛑 Security: Ignore Secrets
+config.env
+secrets/
+*.json
+*.key
+*.pem
+
+# Python / App garbage
+__pycache__/
+*.pyc
+.venv/
+env/
+
+# IDE / OS garbage
+.DS_Store
+.idea/
+.vscode/
+
+# Jenkins local workspace (if running locally)
+jenkins_home/
