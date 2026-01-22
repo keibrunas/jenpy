@@ -1,25 +1,29 @@
 import os
 import datetime
 from google.cloud import bigquery
+from google.api_core.exceptions import NotFound
 
 # comment to try the ci pipeline in jenkins
 
-# 1. Get Config from Environment Variables (injected by Jenkins)
-PROJECT_ID = os.environ.get("PROJECT_ID")
-DATASET_ID = "jenkins_demo_db"
-TABLE_ID = "build_logs"
-
-client = bigquery.Client(project=PROJECT_ID)
-
 def run_demo():
+    # 1. Get Config from Environment Variables
+    # ✅ FIX: Use os.getenv with defaults so tests can override them
+    PROJECT_ID = os.getenv("PROJECT_ID")
+    DATASET_ID = os.getenv("DATASET_ID", "jenkins_demo_db")
+    TABLE_ID = os.getenv("TABLE_ID", "build_logs")
+
     print(f"🚀 Connecting to BigQuery project: {PROJECT_ID}")
+
+    # ✅ FIX: Initialize Client INSIDE the function
+    # This allows the test to successfully mock 'bigquery.Client'
+    client = bigquery.Client(project=PROJECT_ID)
 
     # 2. Create Dataset if not exists
     dataset_ref = client.dataset(DATASET_ID)
     try:
         client.get_dataset(dataset_ref)
         print(f"✅ Dataset {DATASET_ID} exists.")
-    except Exception:
+    except NotFound:  # ✅ Best Practice: Catch specific error
         print(f"📦 Creating Dataset {DATASET_ID}...")
         client.create_dataset(dataset_ref)
 
@@ -35,7 +39,7 @@ def run_demo():
     try:
         client.get_table(table_ref)
         print(f"✅ Table {TABLE_ID} exists.")
-    except Exception:
+    except NotFound:
         print(f"📄 Creating Table {TABLE_ID}...")
         table = bigquery.Table(table_ref, schema=schema)
         client.create_table(table)
@@ -48,6 +52,8 @@ def run_demo():
             "status": "SUCCESS"
         }
     ]
+    
+    # Insert rows
     errors = client.insert_rows_json(table_ref, rows_to_insert)
     
     if errors:

@@ -2,28 +2,37 @@ import pytest
 from unittest.mock import MagicMock, patch
 from app.demo_pipeline import run_demo 
 
-# ✅ FIX 1: Patch the reference inside your specific app module
+# Patch the Client where it is imported in the app
 @patch('app.demo_pipeline.bigquery.Client')
-# ✅ FIX 2: Force Test Environment Variables
 @patch.dict('os.environ', {
     'PROJECT_ID': 'test-project', 
     'DATASET_ID': 'test_dataset', 
     'TABLE_ID': 'test_table'
 })
 def test_run_demo_success(mock_client_cls):
-    # 1. Setup the Mock
+    # --- 1. Setup the Mock ---
     mock_client = MagicMock()
     mock_client_cls.return_value = mock_client
 
-    # Simulate that the dataset does NOT exist
+    # Simulate: Dataset NOT found (triggering creation)
     from google.api_core.exceptions import NotFound
     mock_client.get_dataset.side_effect = NotFound("Dataset not found")
     
-    # 2. Run the actual script function
+    # Simulate: Table NOT found (triggering creation)
+    mock_client.get_table.side_effect = NotFound("Table not found")
+
+    # Simulate: Insert rows success (return empty list = no errors)
+    mock_client.insert_rows_json.return_value = []
+
+    # --- 2. Run the Function ---
     run_demo()
 
-    # 3. Assertions
-    # Verify it tried to create the missing dataset
-    mock_client.create_dataset.assert_called()
-    # Verify it tried to insert rows
-    mock_client.insert_rows_json.assert_called()
+    # --- 3. Assertions ---
+    # Verify we tried to create the dataset
+    mock_client.create_dataset.assert_called_once()
+    
+    # Verify we tried to create the table
+    mock_client.create_table.assert_called_once()
+    
+    # Verify we tried to insert rows
+    mock_client.insert_rows_json.assert_called_once()
