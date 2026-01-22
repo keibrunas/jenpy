@@ -1,0 +1,57 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: python-worker
+spec:
+  serviceAccountName: jenkins-sa
+  containers:
+  - name: python
+    image: python:3.11-slim
+    command:
+    - cat
+    tty: true
+    env:
+    - name: GOOGLE_APPLICATION_CREDENTIALS
+      value: "" 
+"""
+        }
+    }
+
+    parameters {
+        string(name: 'DATASET_ID', defaultValue: 'jenkins_demo_db', description: 'Target Dataset Name')
+        string(name: 'TABLE_ID', defaultValue: 'users_table', description: 'Name of the table to create')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', credentialsId: 'github-access-token', url: 'https://github.com/keibrunas/jenpy.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                container('python') {
+                    sh 'pip install --no-cache-dir google-cloud-bigquery==3.25.0'
+                }
+            }
+        }
+
+        stage('Run Creation Script') {
+            steps {
+                container('python') {
+                    // Pass inputs. The Python script uses these to find the correct JSON file.
+                    withEnv(["DATASET_ID=${params.DATASET_ID}", 
+                             "TABLE_ID=${params.TABLE_ID}"]) {
+                        sh 'python app/create_table.py'
+                    }
+                }
+            }
+        }
+    }
+}
