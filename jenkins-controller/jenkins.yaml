@@ -15,3 +15,8 @@ jenkins:
         readTimeout: 15
         # 3. OPTIONAL: Delete pods immediately (even on failure)
         podRetention: "Never"
+  globalNodeProperties:
+    - envVars:
+        env:
+          - key: "PROJECT_ID"
+            value: "${PROJECT_ID}"
