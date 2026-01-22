@@ -27,22 +27,6 @@ graph TD
     style JC fill:#D24939,stroke:#333,stroke-width:2px,color:white
     style JA fill:#326CE5,stroke:#333,stroke-width:2px,color:white
 
-## 🏗 Architecture
-
-```mermaid
-graph TD
-    User((User)) -->|HTTPS| IAP[Identity Aware Proxy / Tunnel]
-    subgraph "Google Kubernetes Engine (Spot Instances)"
-        IAP -->|Port 8080| JC[Jenkins Controller]
-        JC -->|Spawns| JA[Jenkins Agent Pod]
-        JA -->|Runs| Job[Python Workload]
-    end
-    JC -.->|Read| AR[Artifact Registry]
-    JA -.->|Write| BQ[BigQuery]
-    
-    style JC fill:#D24939,stroke:#333,stroke-width:2px,color:white
-    style JA fill:#326CE5,stroke:#333,stroke-width:2px,color:white
-
 ```
 
 * **Compute:** GKE Standard (Spot Instances)
