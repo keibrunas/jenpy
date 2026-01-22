@@ -34,7 +34,7 @@ spec:
         stage('Install Dependencies') {
             steps {
                 container('python') {
-                    sh 'pip install --no-cache-dir google-cloud-bigquery==3.25.0'
+                    sh 'pip install -r requirements.txt'
                 }
             }
         }
