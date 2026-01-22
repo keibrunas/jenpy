@@ -1,0 +1,20 @@
+[
+  {
+    "name": "id",
+    "type": "INTEGER",
+    "mode": "REQUIRED",
+    "description": "Unique identifier"
+  },
+  {
+    "name": "username",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "User login name"
+  },
+  {
+    "name": "created_at",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE",
+    "description": "Creation timestamp"
+  }
+]

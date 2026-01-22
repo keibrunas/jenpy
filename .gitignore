@@ -3,7 +3,7 @@
 # 🛑 Security: Ignore Secrets
 config.env
 secrets/
-*.json
+!config/*.json
 *.key
 *.pem
 
