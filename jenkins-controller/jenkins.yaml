@@ -87,21 +87,23 @@ jobs:
   - script: >
       multibranchPipelineJob('Pull-Request-CI') {
         description('Automatically checks PRs and Branches')
-        branchSources {
-          git {
-            id('github-git')
-            remote('https://github.com/${GITHUB_USER}/jenpy.git')
-            credentialsId('github-access-token')
-          }
-        }
-        triggers {
-            periodicFolderTrigger {
-                interval('1m')
+          branchSources {
+            branchSource {
+                source {
+                    github {
+                        id('github-source')
+                        credentialsId('github-access-token')
+                        repoOwner('${GITHUB_USER}')
+                        repository('jenpy')
+                        traits {
+                            gitHubBranchDiscovery {
+                                strategyId(1) // 1 = Exclude branches that are also filed as PRs
+                            }
+                            gitHubPullRequestDiscovery {
+                                strategyId(1) // 1 = Merge PR with target branch (Test the merge)
+                            }
+                        }
+                    }
+                }
             }
         }
-        factory {
-            workflowBranchProjectFactory {
-                scriptPath('pipelines/ci-pr-check.jenkinsfile')
-            }
-        }
-      }
