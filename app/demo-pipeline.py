@@ -2,6 +2,8 @@ import os
 import datetime
 from google.cloud import bigquery
 
+# comment to try the ci pipeline in jenkins
+
 # 1. Get Config from Environment Variables (injected by Jenkins)
 PROJECT_ID = os.environ.get("PROJECT_ID")
 DATASET_ID = "jenkins_demo_db"
