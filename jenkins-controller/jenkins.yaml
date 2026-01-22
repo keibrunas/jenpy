@@ -72,3 +72,22 @@ jobs:
           }
         }
       }
+  
+  - script: >
+      pipelineJob('Create-Table-Tool') {
+        description('Utility job to create BigQuery tables using a defined JSON schema.')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/${GITHUB_USER}/jenpy.git')
+                  credentials('github-access-token')
+                }
+                branch('*/main')
+              }
+            }
+            scriptPath('pipelines/create-table.jenkinsfile')
+          }
+        }
+      }
