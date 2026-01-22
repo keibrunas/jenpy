@@ -2,8 +2,14 @@ import pytest
 from unittest.mock import MagicMock, patch
 from app.demo_pipeline import run_demo 
 
-# ✅ FIX: Patch the actual library class, not the reference in app
-@patch('google.cloud.bigquery.Client')
+# ✅ FIX 1: Patch the reference inside your specific app module
+@patch('app.demo_pipeline.bigquery.Client')
+# ✅ FIX 2: Force Test Environment Variables
+@patch.dict('os.environ', {
+    'PROJECT_ID': 'test-project', 
+    'DATASET_ID': 'test_dataset', 
+    'TABLE_ID': 'test_table'
+})
 def test_run_demo_success(mock_client_cls):
     # 1. Setup the Mock
     mock_client = MagicMock()
