@@ -4,7 +4,7 @@ from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
 # comment to try the ci pipeline in jenkins
-# comment
+# comment comment
 
 def run_demo():
     # 1. Get Config from Environment Variables
