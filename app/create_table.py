@@ -4,9 +4,6 @@ import json
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
-# comment to try the ci pipeline in jenkins
-# new comments here here here
-
 def create_table_managed():
     # 1. Capture Inputs
     project_id = os.getenv("PROJECT_ID")
