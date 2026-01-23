@@ -47,14 +47,14 @@ security:
     useScriptSecurity: false
 
 jobs:
-  - script: >
+  - script: |
       pipelineJob('BigQuery-Demo') {
         definition {
           cpsScm {
             scm {
               git {
                 remote {
-                  url('https://github.com/${GITHUB_USER}/jenpy.git')
+                  url('https://github.com/${GITHUB_USERNAME}/jenpy.git')
                   credentials('github-access-token')
                 }
                 branch('*/main')
@@ -65,7 +65,7 @@ jobs:
         }
       }
 
-  - script: >
+  - script: |
       pipelineJob('Create-Table-Tool') {
         description('Utility job to create BigQuery tables using a defined JSON schema.')
         definition {
@@ -73,7 +73,7 @@ jobs:
             scm {
               git {
                 remote {
-                  url('https://github.com/${GITHUB_USER}/jenpy.git')
+                  url('https://github.com/${GITHUB_USERNAME}/jenpy.git')
                   credentials('github-access-token')
                 }
                 branch('*/main')
@@ -84,7 +84,7 @@ jobs:
         }
       }
 
-  - script: >
+  - script: |
       multibranchPipelineJob('Pull-Request-CI') {
         description('Automatically checks PRs and Branches')
         branchSources {
@@ -93,7 +93,7 @@ jobs:
                     github {
                         id('github-source')
                         credentialsId('github-access-token')
-                        repoOwner('${GITHUB_USER}')
+                        repoOwner('${GITHUB_USERNAME}')
                         repository('jenpy')
                         traits {
                             gitHubBranchDiscovery {
@@ -107,4 +107,4 @@ jobs:
                 }
             }
         }
-      }  
+      }
