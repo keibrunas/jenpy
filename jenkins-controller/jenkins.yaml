@@ -47,7 +47,7 @@ security:
     useScriptSecurity: false
 
 jobs:
-  - script: >
+  - script: |
       pipelineJob('BigQuery-Demo') {
         definition {
           cpsScm {
@@ -65,7 +65,7 @@ jobs:
         }
       }
 
-  - script: >
+  - script: |
       pipelineJob('Create-Table-Tool') {
         description('Utility job to create BigQuery tables using a defined JSON schema.')
         definition {
@@ -84,24 +84,33 @@ jobs:
         }
       }
 
-  - script: >
+  - script: |
       multibranchPipelineJob('Pull-Request-CI') {
         description('Automatically checks PRs and Branches')
-        branchSources {
-          git {
-            id('github-git')
-            remote('https://github.com/${GITHUB_USER}/jenpy.git')
-            credentialsId('github-access-token')
-          }
-        }
-        triggers {
-            periodicFolderTrigger {
-                interval('1m')
-            }
-        }
         factory {
             workflowBranchProjectFactory {
-                scriptPath('pipelines/ci-pr-check.jenkinsfile')
+                scriptPath('pipelines/ci-pr-check.jenkinsfile') 
+            }
+        }
+        branchSources {
+            branchSource {
+                source {
+                    github {
+                        id('github-source')
+                        credentialsId('github-access-token')
+                        repoOwner('${GITHUB_USER}')
+                        repository('jenpy')
+                        
+                        // Safety lines to prevent crash
+                        repositoryUrl('https://github.com/${GITHUB_USER}/jenpy.git')
+                        configuredByUrl(true)
+
+                        traits {
+                            gitHubBranchDiscovery { strategyId(1) }
+                            gitHubPullRequestDiscovery { strategyId(1) }
+                        }
+                    }
+                }
             }
         }
       }

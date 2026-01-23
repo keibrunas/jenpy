@@ -9,3 +9,6 @@ timestamper
 ws-cleanup
 blueocean
 job-dsl
+github
+github-branch-source
+pipeline-stage-view
