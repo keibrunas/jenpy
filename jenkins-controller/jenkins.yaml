@@ -87,7 +87,7 @@ jobs:
   - script: >
       multibranchPipelineJob('Pull-Request-CI') {
         description('Automatically checks PRs and Branches')
-          branchSources {
+        branchSources {
             branchSource {
                 source {
                     github {
@@ -97,13 +97,14 @@ jobs:
                         repository('jenpy')
                         traits {
                             gitHubBranchDiscovery {
-                                strategyId(1) // 1 = Exclude branches that are also filed as PRs
+                                strategyId(1)
                             }
                             gitHubPullRequestDiscovery {
-                                strategyId(1) // 1 = Merge PR with target branch (Test the merge)
+                                strategyId(1)
                             }
                         }
                     }
                 }
             }
         }
+      }  
