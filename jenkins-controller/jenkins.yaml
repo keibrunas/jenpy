@@ -85,24 +85,32 @@ jobs:
       }
 
   - script: |
-          multibranchPipelineJob('Pull-Request-CI') {
-            description('Automatically checks PRs and Branches')
-            branchSources {
-                branchSource {
-                    source {
-                        github {
-                            id('github-source')
-                            credentialsId('github-access-token')
-                            repoOwner('${GITHUB_USER}')
-                            repository('jenpy')
-                            repositoryUrl('https://github.com/${GITHUB_USER}/jenpy.git')
-                            configuredByUrl(true)
-                            traits {
-                                gitHubBranchDiscovery { strategyId(1) }
-                                gitHubPullRequestDiscovery { strategyId(1) }
-                            }
+      multibranchPipelineJob('Pull-Request-CI') {
+        description('Automatically checks PRs and Branches')
+        factory {
+            workflowBranchProjectFactory {
+                scriptPath('pipelines/ci-pr-check.jenkinsfile') 
+            }
+        }
+        branchSources {
+            branchSource {
+                source {
+                    github {
+                        id('github-source')
+                        credentialsId('github-access-token')
+                        repoOwner('${GITHUB_USER}')
+                        repository('jenpy')
+                        
+                        // Safety lines to prevent crash
+                        repositoryUrl('https://github.com/${GITHUB_USER}/jenpy.git')
+                        configuredByUrl(true)
+
+                        traits {
+                            gitHubBranchDiscovery { strategyId(1) }
+                            gitHubPullRequestDiscovery { strategyId(1) }
                         }
                     }
                 }
             }
-          }
+        }
+      }
