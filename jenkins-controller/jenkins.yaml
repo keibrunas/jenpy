@@ -54,7 +54,7 @@ jobs:
             scm {
               git {
                 remote {
-                  url('https://github.com/${GITHUB_USERNAME}/jenpy.git')
+                  url('https://github.com/${GITHUB_USER}/jenpy.git')
                   credentials('github-access-token')
                 }
                 branch('*/main')
@@ -73,7 +73,7 @@ jobs:
             scm {
               git {
                 remote {
-                  url('https://github.com/${GITHUB_USERNAME}/jenpy.git')
+                  url('https://github.com/${GITHUB_USER}/jenpy.git')
                   credentials('github-access-token')
                 }
                 branch('*/main')
@@ -93,7 +93,7 @@ jobs:
                     github {
                         id('github-source')
                         credentialsId('github-access-token')
-                        repoOwner('${GITHUB_USERNAME}')
+                        repoOwner('${GITHUB_USER}')
                         repository('jenpy')
                         traits {
                             gitHubBranchDiscovery {
