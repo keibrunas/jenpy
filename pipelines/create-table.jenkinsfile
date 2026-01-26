@@ -15,6 +15,13 @@ spec:
     command:
     - cat
     tty: true
+    resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"   # Protegge il cluster da script Python che "mangiano" troppa RAM
+      cpu: "1000m"
 """
         }
     }
