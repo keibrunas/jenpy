@@ -28,7 +28,7 @@ def create_table_managed():
 
     # 2. CHECK: Does the table exist?
     client = bigquery.Client(project=project_id)
-    table_refs = f"{project_id}.{dataset_id}.{table_id}"
+    table_ref = f"{project_id}.{dataset_id}.{table_id}"
 
     try:
         client.get_table(table_ref)
