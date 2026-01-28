@@ -4,6 +4,7 @@ from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
 # comment to try the ci pipeline in jenkins
+# comment comment comment comment comment comment
 
 def run_demo():
     # 1. Get Config from Environment Variables
@@ -28,7 +29,7 @@ def run_demo():
         client.create_dataset(dataset_ref)
 
     # 3. Define Table Schema
-    table_ref = dataset_ref.table(TABLE_ID)
+    table_refs = dataset_ref.table(TABLE_ID)
     schema = [
         bigquery.SchemaField("build_id", "STRING", mode="REQUIRED"),
         bigquery.SchemaField("timestamp", "TIMESTAMP", mode="REQUIRED"),
