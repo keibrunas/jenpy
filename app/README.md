@@ -102,7 +102,9 @@ Dependencies are managed via `requirements.txt`.
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+```
 
+---
 ## 🧪 Testing
 
 We use **Pytest** with `unittest.mock` to ensure logic validity before deployment. The tests run automatically in the `Pull-Request-CI` pipeline.
@@ -111,3 +113,4 @@ We use **Pytest** with `unittest.mock` to ensure logic validity before deploymen
 # Run tests locally
 pip install -r requirements.txt
 pytest tests/ -v
+```
