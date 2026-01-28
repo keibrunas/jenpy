@@ -26,6 +26,13 @@ spec:
         }
     }
 
+    options {
+        // Se il nodo muore, riprova fino a 3 volte
+        retry(3) 
+        // Evita che un job appeso blocchi tutto per sempre
+        timeout(time: 15, unit: 'MINUTES') 
+    }
+
     parameters {
         string(name: 'DATASET_ID', defaultValue: 'jenkins_demo_db', description: 'Target Dataset Name')
         string(name: 'TABLE_ID', defaultValue: 'users_table', description: 'Name of the table to create')

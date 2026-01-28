@@ -1,0 +1,5 @@
+-r requirements.txt  # Include automaticamente le dipendenze base
+pytest==7.4.0
+pytest-mock==3.11.1
+black==24.1.0
+pylint==3.0.0
