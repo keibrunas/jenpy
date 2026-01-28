@@ -30,14 +30,17 @@ spec:
         string(name: 'DATASET_ID', defaultValue: 'jenkins_demo_db', description: 'Target Dataset Name')
         string(name: 'TABLE_ID', defaultValue: 'users_table', description: 'Name of the table to create')
     }
+    
 
     stages {
+    /*NOTE: If you need to checkout code from GitHub, uncomment this stage. This is is useful if you need
+             some custom checkout logic compared to the deafult that jenkins provides with github.
         stage('Checkout') {
             steps {
                 git branch: 'main', credentialsId: 'github-access-token', url: 'https://github.com/keibrunas/jenpy.git'
             }
         }
-
+    */
         stage('Install Dependencies') {
             steps {
                 container('python') {
