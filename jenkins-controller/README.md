@@ -59,8 +59,8 @@ When you run `./build.sh`, the following pipeline executes locally:
 ```mermaid
 graph TD
     A[Start Build] --> B[Pull Base Image jenkins/jenkins:lts]
-    B --> C[Install OS Tools (gcloud, kubectl)]
-    C --> D[Install Plugins (jenkins-plugin-cli)]
+    B --> C["Install OS Tools (gcloud, kubectl)"]
+    C --> D["Install Plugins (jenkins-plugin-cli)"]
     D --> E[Copy JCasC Config to /var/jenkins_config]
     E --> F[Docker Push to Artifact Registry]
     F --> G[Ready for K8s Deployment]
