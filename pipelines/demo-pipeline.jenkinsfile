@@ -24,8 +24,6 @@ spec:
     }
 
     options {
-        // Se il nodo muore, riprova fino a 3 volte
-        retry(3) 
         // Evita che un job appeso blocchi tutto per sempre
         timeout(time: 15, unit: 'MINUTES') 
     }
@@ -37,6 +35,9 @@ spec:
 
     stages {
         stage('Install Deps') {
+        options {
+                retry(3) // <--- SPOSTATO QUI: Se PyPI è giù, ha senso riprovare
+            }
             steps {
                 container('python') {
                     sh 'pip install -r requirements.txt'
