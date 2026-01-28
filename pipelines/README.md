@@ -122,6 +122,3 @@ sequenceDiagram
 * For `ci-pr-check`: Just push to a branch and open a PR.
 * For others: Push to `main`, then trigger manually in Jenkins UI.
 
-
-
-```
