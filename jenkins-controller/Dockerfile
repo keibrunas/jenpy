@@ -1,4 +1,4 @@
-FROM jenkins/jenkins:lts-jdk21   
+FROM jenkins/jenkins:2.541.1-jdk21   
 USER root
 
 # 1. Install prerequisites
