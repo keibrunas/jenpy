@@ -37,19 +37,16 @@ graph LR
 
 **Goal:** Prepare the GCP Project environment one-time.
 
-* 
-**API Enablement:** Activates necessary Google APIs: `container` (GKE), `artifactregistry` (Docker Storage), `iamcredentials`, and `bigquery`.
+* **API Enablement:** Activates necessary Google APIs: `container` (GKE), `artifactregistry` (Docker Storage), `iamcredentials`, and `bigquery`.
 
 
 * **Artifact Registry:** Creates a Docker repository.
-* 
-*Idempotency:* It checks if the repo exists (`gcloud artifacts repositories describe`) before trying to create it, preventing errors on re-runs.
+* *Idempotency:* It checks if the repo exists (`gcloud artifacts repositories describe`) before trying to create it, preventing errors on re-runs.
 
 
 
 
-* 
-**Auth Config:** Configures the local Docker daemon to authenticate with Google's registry (`gcloud auth configure-docker`), allowing you to push images later.
+* **Auth Config:** Configures the local Docker daemon to authenticate with Google's registry (`gcloud auth configure-docker`), allowing you to push images later.
 
 
 
@@ -65,12 +62,10 @@ graph LR
 
 **Goal:** Deploy the Kubernetes manifests with dynamic variable injection.
 
-* 
-**Context Switch:** Fetches the `kubectl` credentials for the newly created cluster (`gcloud container clusters get-credentials`).
+* **Context Switch:** Fetches the `kubectl` credentials for the newly created cluster (`gcloud container clusters get-credentials`).
 
 
-* 
-**Namespace:** Creates the `jenkins` namespace if it doesn't exist.
+* **Namespace:** Creates the `jenkins` namespace if it doesn't exist.
 
 
 * **Templating (`envsubst`):** This is the core logic. It loops through all `.yaml` files in `../k8s/`. It reads the files, replaces variables like `${PROJECT_ID}` and `${IMAGE_URL}` with real values from `config.env`, and pipes the result directly to `kubectl apply`.
@@ -82,8 +77,7 @@ envsubst < $file | kubectl apply -f -
 ```
 
 
-* 
-**Verification:** Waits for the deployment rollout to complete successfully before finishing.
+* **Verification:** Waits for the deployment rollout to complete successfully before finishing.
 
 
 
@@ -113,7 +107,7 @@ source ./config.env
 
 ```
 
-. This ensures that no matter where you call the script from (e.g., `cd scripts && ./00...` or `./scripts/00...`), the script always correctly locates the project root and loads the configuration.
+This ensures that no matter where you call the script from (e.g., `cd scripts && ./00...` or `./scripts/00...`), the script always correctly locates the project root and loads the configuration.
 
 ### Templating Strategy
 
