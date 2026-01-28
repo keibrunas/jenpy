@@ -13,7 +13,7 @@ The scripts located here are designed to execute inside **Ephemeral Kubernetes A
 | `create_table.py` | **Infra Tool** | An idempotent utility to manage BigQuery schemas. It reads JSON definitions from `config/` and applies them to the cloud. |
 | `requirements.txt` | **Config** | Python dependencies (pinned versions recommended for stability). |
 | `config/` | **Schemas** | Directory containing JSON schema definitions used by `create_table.py`. |
-| `tests/` | **QA** | Unit tests suite using `pytest` and mocks (see [tests/README.md](tests/README.md)). |
+| `tests/` | **QA** | Unit tests suite using `pytest` and mocks (see [tests/README.md](/tests/README.md)). |
 
 ---
 

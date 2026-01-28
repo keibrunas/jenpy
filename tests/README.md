@@ -1,7 +1,3 @@
-Certamente. Il `README.md` per la cartella dei test è fondamentale perché spiega **come** eseguire i test senza aver bisogno di credenziali Google reali, un concetto che spesso confonde i nuovi sviluppatori.
-
-Ecco il file pronto per la cartella `tests/`. Ho incluso una sezione speciale "Mocking Strategy" per documentare le scelte architetturali che abbiamo fatto (MagicMock e Patch).
-
 ### `tests/README.md`
 
 ```markdown
