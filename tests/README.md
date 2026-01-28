@@ -72,5 +72,5 @@ We patch `sys.exit` so that instead of quitting, it just records that "exit was 
 
 ## 🤖 CI Integration
 
-These tests are automatically executed in the **Pull Request Pipeline** (`ci-pr-check.jenkinsfile`).
+These tests are automatically executed in the **Pull Request Pipeline** ([pipelines/ci-pr-check.jenkinsfile](/pipelines/ci-pr-check.jenkinsfile)).
 Jenkins mounts the source code, installs dependencies, and runs `pytest`. If any test fails, the Pull Request is marked as failed.
