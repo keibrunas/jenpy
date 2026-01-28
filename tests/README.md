@@ -1,6 +1,3 @@
-### `tests/README.md`
-
-```markdown
 # 🧪 Unit Testing Suite
 
 This directory contains the automated tests for the Python application logic.
