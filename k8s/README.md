@@ -53,7 +53,7 @@ metadata:
 
 Running Jenkins on Kubernetes is tricky because Jenkins drops root privileges (runs as user `1000`). If the Persistent Disk is mounted by `root`, Jenkins crashes with `Permission Denied`.
 
-**The Fix: `securityContext**`
+**The Fix: `securityContext`**
 We instruct Kubernetes to mount the volume with specific group ownership:
 
 ```yaml
