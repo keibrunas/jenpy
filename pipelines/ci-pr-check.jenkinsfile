@@ -26,14 +26,33 @@ spec:
         }
     }
 
+    options {
+        // Evita che un job appeso blocchi tutto per sempre
+        timeout(time: 15, unit: 'MINUTES') 
+    }
+
     stages {
         stage('Install Deps') {
+            options {
+                retry(3) // <--- SPOSTATO QUI: Se PyPI è giù, ha senso riprovare
+            }
             steps {
                 container('python') {
-                    sh 'pip install --no-cache-dir -r requirements.txt'
+                    sh 'pip install --no-cache-dir -r requirements-dev.txt'
                 }
             }
         }
+
+        stage('Code Quality') {
+            steps {
+                container('python') {
+            // Fallisce se il codice non è formattato correttamente
+                    sh 'black --check app/ tests/' 
+            // Fallisce se ci sono errori gravi di codice
+                    sh 'pylint app/*.py' 
+                }
+            }
+        }        
 
         stage('Test Python App') {
             // ONLY run this stage if .py files changed
