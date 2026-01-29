@@ -1,77 +1,111 @@
 """
 Demo pipeline for inserting data into BigQuery.
-Simulates a CI/CD flow writing build logs.
+Optimized for Container execution (UTC timestamps, Logging) and Testability.
 """
 
+import datetime
 import os
 import sys
-import datetime
+from typing import Any
+
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
+# Import shared utilities
+from app.utils import setup_logging, get_project_id
 
-def run_demo():
-    """
-    Executes the demo logic:
-    1. Connects to BigQuery.
-    2. Creates Dataset and Table if missing.
-    3. Inserts a log row.
-    """
-    # 1. Get Config from Environment Variables
-    # FIX: C0103 Variable names should be lowercase inside functions
-    project_id = os.getenv("PROJECT_ID")
-    dataset_id = os.getenv("DATASET_ID", "jenkins_demo_db")
-    table_id = os.getenv("TABLE_ID", "build_logs")
+# --- Logging Configuration ---
+LOGGER = setup_logging("demo_pipeline")
 
-    print(f"🚀 Connecting to BigQuery project: {project_id}")
 
-    # This allows the test to successfully mock 'bigquery.Client'
-    client = bigquery.Client(project=project_id)
+def ensure_dataset(
+    client: bigquery.Client, dataset_id: str
+) -> bigquery.DatasetReference:
+    """Checks and creates the dataset if missing (Idempotent)."""
+    # FIX: Sostituiamo client.dataset() (Deprecato) con il costruttore diretto
+    dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
 
-    # 2. Create Dataset if not exists
-    dataset_ref = client.dataset(dataset_id)
     try:
         client.get_dataset(dataset_ref)
-        print(f"✅ Dataset {dataset_id} exists.")
+        LOGGER.info("✅ Dataset exists: %s", dataset_id)
     except NotFound:
-        print(f"📦 Creating Dataset {dataset_id}...")
+        LOGGER.info("📦 Creating Dataset: %s", dataset_id)
         client.create_dataset(dataset_ref)
+    return dataset_ref
 
-    # 3. Define Table Schema
-    table_ref = dataset_ref.table(table_id)
-    schema = [
-        bigquery.SchemaField("build_id", "STRING", mode="REQUIRED"),
-        bigquery.SchemaField("timestamp", "TIMESTAMP", mode="REQUIRED"),
-        bigquery.SchemaField("status", "STRING", mode="REQUIRED"),
-    ]
 
-    # 4. Create Table if not exists
+def ensure_table(client: bigquery.Client, table_ref: bigquery.TableReference) -> None:
+    """Checks and creates the table if missing using a hardcoded schema."""
     try:
         client.get_table(table_ref)
-        print(f"✅ Table {table_id} exists.")
+        LOGGER.info("✅ Table exists: %s", table_ref.table_id)
     except NotFound:
-        print(f"📄 Creating Table {table_id}...")
+        LOGGER.info("📄 Creating Table: %s", table_ref.table_id)
+        schema = [
+            bigquery.SchemaField("build_id", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("timestamp", "TIMESTAMP", mode="REQUIRED"),
+            bigquery.SchemaField("status", "STRING", mode="REQUIRED"),
+        ]
         table = bigquery.Table(table_ref, schema=schema)
         client.create_table(table)
 
-    # 5. Insert a Row
-    rows_to_insert = [
-        {
-            "build_id": os.environ.get("BUILD_NUMBER", "DEV-1"),
-            "timestamp": datetime.datetime.now().isoformat(),
-            "status": "SUCCESS",
-        }
-    ]
 
-    # Insert rows
-    errors = client.insert_rows_json(table_ref, rows_to_insert)
+def insert_build_log(
+    client: bigquery.Client, table_ref: bigquery.TableReference, build_id: str
+) -> None:
+    """Prepares and executes the insertion of a log row."""
+    timestamp_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    row: dict[str, Any] = {
+        "build_id": build_id,
+        "timestamp": timestamp_utc,
+        "status": "SUCCESS",
+    }
+
+    LOGGER.info("📤 Inserting row: %s", row)
+    errors = client.insert_rows_json(table_ref, [row])
 
     if errors:
-        print(f"❌ Error inserting rows: {errors}")
-        sys.exit(1)  # FIX: R1722 Use sys.exit instead of exit()
-    else:
-        print(f"🎉 Successfully inserted 1 row into {dataset_id}.{table_id}")
+        LOGGER.error("❌ Insert errors: %s", errors)
+        raise RuntimeError(f"BigQuery Insert Errors: {errors}")
+
+    LOGGER.info("🎉 Pipeline completed successfully.")
+
+
+def run_pipeline(
+    project_id: str, dataset_id: str, table_id: str, build_number: str
+) -> None:
+    """Orchestrates the pipeline execution logic."""
+    LOGGER.info("🚀 Start Pipeline. Project: %s | Build: %s", project_id, build_number)
+
+    client = bigquery.Client(project=project_id)
+
+    # 1. Infrastructure
+    dataset_ref = ensure_dataset(client, dataset_id)
+    table_ref = dataset_ref.table(table_id)
+    ensure_table(client, table_ref)
+
+    # 2. Data Insertion
+    insert_build_log(client, table_ref, build_number)
+
+
+def main() -> None:
+    """Entry point. Handles environment variables and top-level error catching."""
+    project_id = get_project_id()
+    dataset_id = os.getenv("DATASET_ID", "jenkins_demo_db")
+    table_id = os.getenv("TABLE_ID", "build_logs")
+    build_number = os.getenv("BUILD_NUMBER", "LOCAL-DEV")
+
+    if not project_id:
+        LOGGER.error("❌ Critical: PROJECT_ID environment variable is missing.")
+        sys.exit(1)
+
+    try:
+        run_pipeline(project_id, dataset_id, table_id, build_number)
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        LOGGER.exception("❌ Fatal pipeline error: %s", exc)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    run_demo()
+    main()
