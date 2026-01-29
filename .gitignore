@@ -19,4 +19,4 @@ env/
 .vscode/
 
 # Jenkins local workspace (if running locally)
-jenkins_home/
+jenkins_home/.python-version
