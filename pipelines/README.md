@@ -16,8 +16,7 @@ Instead of clicking through the Jenkins UI, we define our build processes as cod
 
 **🔍 Deep Dive:**
 
-* 
-**Optimization:** Uses `when { changeset "**/*.py" }` to skip heavy tests if only documentation changes.
+* **Optimization:** Uses `when { changeset "**/*.py" }` to skip heavy tests if only documentation changes.
 
 
 * **Formatting (Black):** Checks code style. If unformatted code is found, the build is marked as **UNSTABLE**, but proceeds.
@@ -38,16 +37,13 @@ Instead of clicking through the Jenkins UI, we define our build processes as cod
 
 **🔍 Deep Dive:**
 
-* 
-**Module Resolution:** Uses `withEnv(['PYTHONPATH=.'])` to allow the script to import shared logic from `app.utils`.
+* **Module Resolution:** Uses `withEnv(['PYTHONPATH=.'])` to allow the script to import shared logic from `app.utils`.
 
 
-* 
-**Secrets Management:** Leverages the bound Kubernetes Service Account (`jenkins-sa`) to authenticate with BigQuery via Workload Identity.
+* **Secrets Management:** Leverages the bound Kubernetes Service Account (`jenkins-sa`) to authenticate with BigQuery via Workload Identity.
 
 
-* 
-**Performance:** Installs dependencies with `--no-cache-dir` to save I/O in the ephemeral container.
+* **Performance:** Installs dependencies with `--no-cache-dir` to save I/O in the ephemeral container.
 
 
 
@@ -65,12 +61,10 @@ Instead of clicking through the Jenkins UI, we define our build processes as cod
 
 **🔍 Deep Dive:**
 
-* 
-**Parameter Bridge:** Maps Jenkins Inputs to Python Environment Variables using `withEnv`.
+* **Parameter Bridge:** Maps Jenkins Inputs to Python Environment Variables using `withEnv`.
 
 
-* 
-**Logging:** Ensures real-time logging output by forcing `PYTHONUNBUFFERED=1`, critical for debugging crashes in Python scripts.
+* **Logging:** Ensures real-time logging output by forcing `PYTHONUNBUFFERED=1`, critical for debugging crashes in Python scripts.
 
 
 
@@ -122,12 +116,10 @@ spec:
 1. **`PYTHONUNBUFFERED=1`**: In Kubernetes, Python defaults to buffering output. This variable forces logs to stream directly to Jenkins, ensuring we see the exact error message if a script crashes.
 
 
-2. 
-**`PYTHONDONTWRITEBYTECODE=1`**: Since the container is destroyed immediately after the job, generating `__pycache__` files is a waste of I/O resources.
+2. **`PYTHONDONTWRITEBYTECODE=1`**: Since the container is destroyed immediately after the job, generating `__pycache__` files is a waste of I/O resources.
 
 
-3. 
-**`serviceAccountName`**: Grants the Pod the specific IAM roles required to interact with Google Cloud APIs.
+3. **`serviceAccountName`**: Grants the Pod the specific IAM roles required to interact with Google Cloud APIs.
 
 
 
