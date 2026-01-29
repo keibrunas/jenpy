@@ -1,4 +1,5 @@
-#  🛤️ Jenkins Pipelines (CI/CD)
+
+# 🛤️ Jenkins Pipelines (CI/CD)
 
 This directory contains the **Declarative Jenkinsfiles** that drive the automation logic of the platform.
 Instead of clicking through the Jenkins UI, we define our build processes as code, versioned alongside the application logic.
@@ -7,31 +8,47 @@ Instead of clicking through the Jenkins UI, we define our build processes as cod
 
 ## 📂 Pipeline Catalog
 
-### 1. `ci-pr-check.jenkinsfile` (The Guardian)
+### 1. `ci-pr-check.jenkinsfile` (The Quality Gate)
+
 * **Type:** Multibranch Pipeline.
 * **Trigger:** Automatically triggers on **Pull Requests** or commits to tracked branches.
-* **Goal:** Verify code integrity before merging.
+* **Goal:** Enforce strict code quality standards before merging.
 
 **🔍 Deep Dive:**
-* **Conditional Execution:** Uses the `when { changeset "**/*.py" }` directive.
-    * *Benefit:* If you only change `README.md`, the heavy Python tests are **skipped**, saving cluster resources and time.
-* **Test Runner:** Executes `pytest` inside an isolated Python container.
-* **Outcome:** Updates the GitHub PR status (Green Check / Red Cross).
+
+* **Optimization:** Uses `when { changeset "**/*.py" }` to skip heavy tests if only documentation changes.
+
+
+* **Formatting (Black):** Checks code style. If unformatted code is found, the build is marked as **UNSTABLE**, but proceeds.
+
+
+* **Static Analysis (Pylint):** Scans for errors and code smells. Enforces a strict **minimum score of 9.0/10**. If the score drops below this threshold, the pipeline **FAILS**.
+
+
+* **Test Coverage:** Executes `pytest` with `pytest-cov`. Enforces a hard **90% Code Coverage** gate. If coverage is below 90%, the build **FAILS**.
+
+
 
 ### 2. `demo-pipeline.jenkinsfile` (The ETL Worker)
+
 * **Type:** Standard Pipeline.
 * **Trigger:** Manual (or Scheduled).
 * **Goal:** Execute the core Data Engineering workload (`demo_pipeline.py`).
 
 **🔍 Deep Dive:**
-* **Context Injection:** Automatically injects the global `PROJECT_ID` into the container environment.
-* **Secrets Management:** Leverages the bound Kubernetes Service Account (`jenkins-sa`) to authenticate with BigQuery without handling JSON keys.
-* **Workload:**
-    1.  Checkout Code.
-    2.  Install `requirements.txt`.
-    3.  Run the ETL script.
+
+* **Module Resolution:** Uses `withEnv(['PYTHONPATH=.'])` to allow the script to import shared logic from `app.utils`.
+
+
+* **Secrets Management:** Leverages the bound Kubernetes Service Account (`jenkins-sa`) to authenticate with BigQuery via Workload Identity.
+
+
+* **Performance:** Installs dependencies with `--no-cache-dir` to save I/O in the ephemeral container.
+
+
 
 ### 3. `create-table.jenkinsfile` (The Utility Tool)
+
 * **Type:** Parameterized Pipeline.
 * **Trigger:** Manual (User Input Required).
 * **Goal:** Idempotent creation/update of BigQuery tables using JSON schemas.
@@ -43,8 +60,13 @@ Instead of clicking through the Jenkins UI, we define our build processes as cod
 | `TABLE_ID` | `users_table` | The name of the table to create. |
 
 **🔍 Deep Dive:**
-* **Parameter Bridge:** Uses the `withEnv` block to map Jenkins User Inputs (`params.DATASET_ID`) to Python Environment Variables (`os.environ['DATASET_ID']`).
-* **Schema Enforcement:** The pipeline assumes a strict naming convention for config files: `config/<DATASET>_<TABLE>.json`.
+
+* **Parameter Bridge:** Maps Jenkins Inputs to Python Environment Variables using `withEnv`.
+
+
+* **Logging:** Ensures real-time logging output by forcing `PYTHONUNBUFFERED=1`, critical for debugging crashes in Python scripts.
+
+
 
 ---
 
@@ -53,25 +75,32 @@ Instead of clicking through the Jenkins UI, we define our build processes as cod
 We do not use static build servers. Every single job spawns a **dedicated, disposable Kubernetes Pod**. This ensures a clean environment for every build and eliminates dependency conflicts.
 
 ### The "Pod Template" Pattern
-Instead of relying on global configurations, we define the Agent infrastructure **inline** within the Jenkinsfile. This gives developers full control over their build environment.
 
-**Example from `ci-pr-check.jenkinsfile`:**
-```groovy
-agent {
-    kubernetes {
-        yaml """
+We define the Agent infrastructure **inline** within the Jenkinsfile using the Kubernetes plugin.
+
+**Example Configuration:**
+
+```yaml
 apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    app: python-tester
+    app: python-worker
 spec:
-  serviceAccountName: jenkins-sa  # <--- Identity Binding
+  serviceAccountName: jenkins-sa  # <--- Identity Binding (Workload Identity)
   containers:
-  - name: python                  # <--- The Worker Container
-    image: python:3.11-slim       # <--- The Exact Tool Version
+  - name: python
+    image: python:3.11.8-slim-bookworm
     command: ['cat']
-    tty: true                     # <--- Keeps container alive
+    tty: true
+    env:
+      # CRITICAL: Forces Python to flush logs to stdout immediately.
+      # Prevents losing error logs if the pod crashes (OOM).
+      - name: PYTHONUNBUFFERED
+        value: "1"
+      # Optimization: Prevents writing .pyc files to disk, saving I/O.
+      - name: PYTHONDONTWRITEBYTECODE
+        value: "1"
     resources:
       requests:
         memory: "256Mi"
@@ -79,17 +108,20 @@ spec:
       limits:
         memory: "1Gi"             # <--- OOM Protection
         cpu: "1000m"
-"""
-    }
-}
 
 ```
 
 ### Key Concepts in the Template:
 
-1. **`serviceAccountName: jenkins-sa`**: This line grants the temporary Pod the "Badge" to talk to Google Cloud APIs (Workload Identity).
-2. **`command: ['cat']` + `tty: true**`: This is a hack to keep the container running indefinitely (idle) so Jenkins can send shell commands to it. Without this, the container would start and exit immediately.
-3. **`resources`**: We strictly define memory limits. If a Python script tries to eat 2GB of RAM, Kubernetes will kill it (`OOMKilled`) to protect the rest of the cluster.
+1. **`PYTHONUNBUFFERED=1`**: In Kubernetes, Python defaults to buffering output. This variable forces logs to stream directly to Jenkins, ensuring we see the exact error message if a script crashes.
+
+
+2. **`PYTHONDONTWRITEBYTECODE=1`**: Since the container is destroyed immediately after the job, generating `__pycache__` files is a waste of I/O resources.
+
+
+3. **`serviceAccountName`**: Grants the Pod the specific IAM roles required to interact with Google Cloud APIs.
+
+
 
 ---
 
@@ -98,27 +130,57 @@ spec:
 ```mermaid
 sequenceDiagram
     participant J as Jenkins Controller
-    participant K as Kubernetes
-    participant P as Agent Pod (Python)
-    participant G as Google Cloud
+    participant K as Kubernetes API
+    participant P as Pod (jnlp + python)
+    participant G as Google Cloud (BigQuery)
 
-    J->>K: "I need a worker (Pod) with Python 3.11"
-    K->>P: Spawns Pod (jnlp + python containers)
-    P->>J: "I'm ready!" (via JNLP)
-    J->>P: "Checkout Code"
-    J->>P: "Run pip install & scripts"
-    P->>G: Authenticates via Service Account & Writes Data
-    P-->>J: Returns Exit Code (0 = Success)
-    J->>K: "Job Done, Destroy the Pod"
-    K->>P: Terminates Pod
+    Note over J,K: 1. Provisioning
+    J->>K: Request Agent (label: python-worker)
+    K-->>P: Schedule Pod
+    
+    Note right of K: Spawns 2 Containers:<br/>1. jnlp (Agent)<br/>2. python (Worker)
+
+    Note over P,J: 2. The Handshake (JNLP)
+    P->>J: JNLP Connection Request (TCP/WebSocket)
+    J-->>P: Connection Established
+    Note left of P: Pipeline resumes
+
+    Note over J,P: 3. Execution Phase
+    J->>P: Checkout Code (Git)
+    J->>P: Enter container('python')
+    
+    Note right of P: Context Switch:<br/>Commands run inside<br/>python container
+    
+    P->>P: pip install --no-cache-dir ...
+    P->>P: export PYTHONPATH=.
+    P->>P: python app/demo_pipeline.py
+
+    Note over P,G: 4. Cloud Interaction
+    P->>G: Auth (Workload Identity / SA)
+    P->>G: BigQuery Insert / Create Table
+    G-->>P: 200 OK
+    
+    P-->>J: Return Exit Code (0)
+    
+    Note over J,K: 5. Teardown
+    J->>K: Terminate Pod
+    K-->>P: Kill (SIGTERM)
 
 ```
 
 ## 🛠 Usage Guide for Developers
 
-1. **Modify Logic:** Edit the Python scripts in `app/`.
-2. **Modify Infra:** Edit the `yaml` block inside the `Jenkinsfile` (e.g., to upgrade Python version or increase RAM).
-3. **Push:**
-* For `ci-pr-check`: Just push to a branch and open a PR.
-* For others: Push to `main`, then trigger manually in Jenkins UI.
+1. **Modify Logic:** Edit scripts in `app/` or `app/utils.py`.
+2. **Local Testing:** Ensure you pass the quality gates before pushing:
+```bash
+pip install -r requirements-dev.txt
+black --check app/ tests/
+pylint app/*.py
+pytest --cov=app --cov-report=term-missing --cov-fail-under=90 tests/
 
+```
+
+
+3. **Push:**
+* For `ci-pr-check`: Push to a branch and open a PR.
+* For others: Trigger manually in Jenkins UI.
