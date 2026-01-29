@@ -1,32 +1,36 @@
 # 🧪 Unit Testing Suite
 
-This directory contains the automated tests for the Python application logic.
-The suite uses **Pytest** and **unittest.mock** to verify the code logic in complete isolation, meaning **no real connection to Google Cloud is established**.
+This directory contains the automated tests for the Python application logic (`app/`).
+The suite uses **Pytest**, **pytest-cov**, and **unittest.mock** to verify code correctness in complete isolation, ensuring **100% Code Coverage** without any external dependencies.
 
 ## 🎯 Philosophy
 
-* **Fast:** Tests run in milliseconds.
-* **Cost-Free:** No API calls are made to BigQuery.
-* **Secure:** No Service Account keys or authentication are required to run these tests.
+* **Isolated:** No real connection to Google Cloud is established. We mock everything.
+* **Fast:** Tests run in milliseconds, not seconds.
+* **Secure:** No Service Account keys or authentication are required.
+* **Strict:** We aim for 100% coverage to satisfy Pylance and Pylint requirements.
 
 ## 📂 File Index
 
 | File | Description |
-| :--- | :--- |
-| `conftest.py` | **Configuration.** Sets up the Python path so tests can import modules from the parent `app/` directory without errors. |
-| `test_create_table.py` | **Infra Logic.** Verifies that the table creation tool correctly reads JSON schemas and handles "Table Exists" scenarios gracefully. |
-| `test_demo_pipeline.py` | **ETL Logic.** Simulates the data ingestion flow (Dataset check → Table check → Insert Row) confirming calls are made in the right order. |
+| --- | --- |
+| `conftest.py` | **Configuration.** Sets up the Python path and provides the `clean_env` fixture to ensure test isolation (clears env vars between tests). |
+| `test_utils.py` | **Core Logic.** Verifies shared utilities (`app.utils`), including idempotent logging setup and robust **Workload Identity** authentication fallback. |
+| `test_create_table.py` | **Infra Logic.** Tests the table creation workflow, including JSON schema parsing and graceful handling of existing tables. |
+| `test_demo_pipeline.py` | **ETL Logic.** Simulates the full data pipeline (Dataset → Table → Insert), ensuring correct call order and UTC timestamp generation. |
 
 ## 🚀 How to Run
 
 ### Prerequisites
-Make sure you have installed the dependencies:
+
+Install the development dependencies (including `pytest-cov`):
+
 ```bash
 pip install -r requirements-dev.txt
 
 ```
 
-### Running the Suite
+### Running the Suite (Standard)
 
 Execute all tests with verbose output:
 
@@ -35,42 +39,62 @@ pytest tests/ -v
 
 ```
 
-### Running Specific Tests
+### Checking Code Coverage 🛡️
 
-You can filter tests by name using the `-k` (keyword) flag:
+To verify the **100% coverage** goal, run with the coverage flags:
 
 ```bash
-# Run only tests related to the "demo" pipeline
-pytest -k "demo" -v
+pytest --cov=app --cov-report=term-missing --cov-fail-under=100 tests/
 
 ```
 
+* `--cov=app`: Measures coverage only for the source code.
+* `--cov-report=term-missing`: Shows exactly which lines are not covered in the terminal.
+* `--cov-fail-under=100`: Forces the command to fail if coverage is not perfect.
+
 ## 🛠 Technical Deep Dive
 
-### 1. The `conftest.py`
+### 1. Modular Architecture & Utils
 
-Since our folder structure separates `app/` and `tests/`, Python cannot naturally find the source code.
-The `conftest.py` file automatically appends the project root to `sys.path` before any test runs.
+We extracted common logic into `app.utils`. Consequently, we added `test_utils.py` to rigorously test:
 
-### 2. Mocking Strategy
+* **Logging Idempotency:** Ensuring handlers are not duplicated if `setup_logging` is called multiple times.
+* **Auth Fallbacks:** Testing the priority chain (Env Var → Workload Identity → Error).
+* **Type Narrowing:** Specifically ensuring `ValueError` is raised if Google Auth returns `None` for the Project ID, satisfying strict **Pylance** checks.
 
-We use two main techniques to simulate Google Cloud:
+### 2. Advanced Mocking Strategy
 
-* **`@patch` (The Interceptor):** We use decorators to intercept libraries like `google.cloud.bigquery` or `os.environ`.
-* *Example:* `@patch('app.create_table.bigquery')` ensures that when the app tries to import BigQuery, it gets a fake object instead.
+We use `unittest.mock` to simulate the Google Cloud environment.
+
+* **The `Client` & `DatasetReference` Fix:**
+Since the code now uses `bigquery.DatasetReference(client.project, dataset_id)`, our mocks must be precise. We explicitly set the project attribute on mock objects to avoid `ValueError` from the library:
+```python
+mock_client = MagicMock()
+mock_client.project = "test-project" # Critical for DatasetReference validation
+
+```
 
 
-* **`MagicMock` (The Stuntman):** We create fake client objects that record how they are used.
-* *Example:* We check `mock_client.create_table.assert_called_once()` to verify the code *tried* to create a table, without actually doing it.
+* **`@patch` Decorators:**
+We patch imports where they are *used*, not where they are defined. For example, we patch `app.create_table.get_project_id` even though the function is defined in `utils`, ensuring the module under test receives the mock.
 
+### 3. Main Entry Point Testing
 
+To achieve 100% coverage, we encapsulate the script execution in a `main()` function. We test it by mocking `sys.exit` to prevent the test runner from aborting:
 
-### 3. Handling `sys.exit()`
+```python
+@patch("app.demo_pipeline.sys.exit")
+def test_main_failure(mock_exit):
+    ...
+    mock_exit.assert_called_with(1)
 
-The script `create_table.py` uses `sys.exit(1)` on failure. In a test environment, this would crash the test runner.
-We patch `sys.exit` so that instead of quitting, it just records that "exit was called".
+```
 
 ## 🤖 CI Integration
 
-These tests are automatically executed in the **Pull Request Pipeline** ([pipelines/ci-pr-check.jenkinsfile](/pipelines/ci-pr-check.jenkinsfile)).
-Jenkins mounts the source code, installs dependencies, and runs `pytest`. If any test fails, the Pull Request is marked as failed.
+These tests are executed automatically in the **[Pull Request Pipeline](https://www.google.com/search?q=/pipelines/ci-pr-check.jenkinsfile)**.
+The build enforces strict Quality Gates:
+
+1. **Black:** Code formatting.
+2. **Pylint:** Must score **> 9.0/10**.
+3. **Coverage:** Must be **> 90%** (The pipeline allows a small margin, but local dev targets 100%).
