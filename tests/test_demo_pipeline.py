@@ -1,6 +1,6 @@
 """
-Test unitari per il modulo app.demo_pipeline.
-Verifica la logica di connessione, creazione dataset/tabella e inserimento righe.
+Unit tests for the app.demo_pipeline module.
+Verifies connection logic, dataset/table creation, and row insertion.
 """
 
 from unittest.mock import MagicMock, patch
@@ -23,10 +23,10 @@ from app.demo_pipeline import run_demo
 )
 def test_run_demo_success(mock_client_cls):
     """
-    Testa il flusso completo di run_demo:
-    - Dataset mancante -> creato.
-    - Tabella mancante -> creata.
-    - Inserimento righe -> successo.
+    Tests the complete run_demo flow:
+    - Dataset missing -> created.
+    - Table missing -> created.
+    - Row insertion -> success.
     """
     # --- 1. Setup the Mock ---
     mock_client = MagicMock()

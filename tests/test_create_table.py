@@ -1,6 +1,6 @@
 """
-Test unitari per il modulo app.create_table.
-Verifica la creazione della tabella e la gestione del file di configurazione.
+Unit tests for the app.create_table module.
+Verifies table creation and configuration file handling.
 """
 
 from unittest.mock import MagicMock, patch, mock_open
@@ -21,10 +21,10 @@ from app.create_table import create_table_managed
 )
 def test_create_table_success(mock_sys_exit, mock_bigquery):
     """
-    Testa il percorso felice (happy path):
-    - Configurazione trovata.
-    - Tabella non esistente (NotFound).
-    - Creazione tabella avvenuta con successo.
+    Tests the happy path:
+    - Configuration found.
+    - Table does not exist (NotFound).
+    - Table creation successful.
     """
     # --- 1. Setup Mocks ---
     mock_client = MagicMock()

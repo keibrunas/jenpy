@@ -1,6 +1,6 @@
 """
-Modulo per la gestione automatizzata della creazione tabelle su BigQuery.
-Legge la configurazione da file JSON e crea la tabella se non esiste.
+Module for automated table creation on BigQuery.
+Reads configuration from a JSON file and creates the table if it does not exist.
 """
 
 import os
@@ -12,9 +12,9 @@ from google.api_core.exceptions import NotFound
 
 def create_table_managed():
     """
-    Funzione principale che orchestra la creazione della tabella.
-    Recupera le variabili d'ambiente, verifica l'esistenza della tabella,
-    legge lo schema JSON e crea la tabella su BigQuery.
+    Main function orchestrating table creation.
+    Retrieves environment variables, verifies table existence,
+    reads the JSON schema, and creates the table on BigQuery.
     """
     # 1. Capture Inputs
     project_id = os.getenv("PROJECT_ID")

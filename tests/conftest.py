@@ -1,6 +1,6 @@
 """
-Configurazione globale per Pytest.
-Aggiunge la root del progetto al PYTHONPATH per permettere gli import dei moduli app.
+Global configuration for Pytest.
+Adds the project root to PYTHONPATH to allow imports of app modules.
 """
 
 import sys

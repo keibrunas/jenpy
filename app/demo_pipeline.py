@@ -1,6 +1,6 @@
 """
-Pipeline dimostrativa per l'inserimento di dati in BigQuery.
-Simula un flusso CI/CD che scrive log di build.
+Demo pipeline for inserting data into BigQuery.
+Simulates a CI/CD flow writing build logs.
 """
 
 import os
@@ -12,10 +12,10 @@ from google.api_core.exceptions import NotFound
 
 def run_demo():
     """
-    Esegue la logica della demo:
-    1. Connette a BigQuery.
-    2. Crea Dataset e Tabella se mancanti.
-    3. Inserisce una riga di log.
+    Executes the demo logic:
+    1. Connects to BigQuery.
+    2. Creates Dataset and Table if missing.
+    3. Inserts a log row.
     """
     # 1. Get Config from Environment Variables
     # FIX: C0103 Variable names should be lowercase inside functions
