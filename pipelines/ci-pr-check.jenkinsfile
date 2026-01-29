@@ -93,9 +93,6 @@ spec:
                             // Fallback if Pylint crashes without printing a score
                             error("❌ Critical: Unable to parse Pylint score. Check logs above for syntax errors.")
                         }
-                        
-                        // Cleanup temp file (optional, as pod is ephemeral)
-                        sh 'rm pylint_temp.log'
                     }
                 }
             }
