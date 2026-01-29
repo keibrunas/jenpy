@@ -20,3 +20,5 @@ env/
 
 # Jenkins local workspace (if running locally)
 jenkins_home/
+
+.python-version
