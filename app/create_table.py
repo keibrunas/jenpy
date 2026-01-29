@@ -1,85 +1,94 @@
 """
 Module for automated table creation on BigQuery.
-Reads configuration from a JSON file and creates the table if it does not exist.
+Designed for execution within Kubernetes/Jenkins environments.
 """
 
+import json
 import os
 import sys
-import json
+from pathlib import Path
+
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
+# Import shared utilities to avoid code duplication
+from app.utils import setup_logging, get_project_id
 
-def create_table_managed():
+# --- Logging Configuration ---
+LOGGER = setup_logging("create_table_worker")
+
+
+def load_schema(schema_path: Path) -> list[bigquery.SchemaField]:
     """
-    Main function orchestrating table creation.
-    Retrieves environment variables, verifies table existence,
-    reads the JSON schema, and creates the table on BigQuery.
+    Loads the JSON schema from the file system.
+
+    Args:
+        schema_path (Path): The path to the JSON schema file.
+
+    Returns:
+        list[bigquery.SchemaField]: The list of BigQuery fields.
     """
-    # 1. Capture Inputs
-    project_id = os.getenv("PROJECT_ID")
+    if not schema_path.exists():
+        LOGGER.error("❌ Missing schema file: %s", schema_path)
+        raise FileNotFoundError(f"Schema not found: {schema_path}")
+
+    with schema_path.open("r", encoding="utf-8") as file_obj:
+        schema_json = json.load(file_obj)
+        return [bigquery.SchemaField.from_api_repr(field) for field in schema_json]
+
+
+def create_table_logic(client: bigquery.Client, dataset_id: str, table_id: str) -> None:
+    """
+    Core logic for table creation.
+
+    Args:
+        client (bigquery.Client): Authenticated BigQuery client.
+        dataset_id (str): Target Dataset ID.
+        table_id (str): Target Table ID.
+    """
+    full_table_id = f"{client.project}.{dataset_id}.{table_id}"
+    LOGGER.info("🚀 Starting Job for: %s", full_table_id)
+
+    # Dynamic path construction based on convention
+    schema_filename = f"{dataset_id}_{table_id}.json"
+    schema_path = Path("config") / schema_filename
+    LOGGER.info("   Schema Path: %s", schema_path)
+
+    # 1. Check Table existence
+    try:
+        client.get_table(full_table_id)
+        LOGGER.info("✅ Table '%s' already exists. No action taken.", full_table_id)
+        return
+    except NotFound:
+        LOGGER.info("✨ Table not found. Proceeding with creation...")
+
+    # 2. Load Schema and Create Table
+    schema = load_schema(schema_path)
+    table = bigquery.Table(full_table_id, schema=schema)
+    created_table = client.create_table(table)
+    LOGGER.info("🎉 SUCCESS: Created table %s", created_table.full_table_id)
+
+
+def main() -> None:
+    """Script entry point."""
     dataset_id = os.getenv("DATASET_ID")
     table_id = os.getenv("TABLE_ID")
 
-    print("🚀 Job Started: Create Table")
-    print(f"   Project: {project_id}")
-    print(f"   Dataset: {dataset_id}")
-    print(f"   Table:   {table_id}")
-
-    if not all([project_id, dataset_id, table_id]):
-        print(
-            "❌ Error: Missing required environment variables (DATASET_ID or TABLE_ID)."
-        )
-        sys.exit(1)
-
-    # ⚠️ NEW LOGIC: Construct Schema Path dynamically
-    # Naming Convention: config/<dataset>_<table_name>.json
-    schema_filename = f"{dataset_id}_{table_id}.json"
-    schema_path = os.path.join("config", schema_filename)
-
-    print(f"   Schema:  {schema_path}")
-
-    # 2. CHECK: Does the table exist?
-    client = bigquery.Client(project=project_id)
-    table_ref = f"{project_id}.{dataset_id}.{table_id}"
-
-    try:
-        client.get_table(table_ref)
-        print(f"⚠️  Table '{table_ref}' ALREADY EXISTS.")
-        print("   Action: Graceful Exit (No changes made).")
-        sys.exit(0)
-    except NotFound:
-        print("✨ Table not found. Proceeding to create it...")
-
-    # 3. Load Schema from the Specific JSON File
-    if not os.path.exists(schema_path):
-        print("❌ Error: Configuration file not found!")
-        print(f"   Expected file: {schema_path}")
-        print(
-            "   Please create this file in the 'config/' folder to define your table."
-        )
+    if not all([dataset_id, table_id]):
+        LOGGER.error("❌ Missing environment variables: DATASET_ID or TABLE_ID")
         sys.exit(1)
 
     try:
-        with open(schema_path, "r", encoding="utf-8") as f:
-            schema_json = json.load(f)
-            schema = [
-                bigquery.SchemaField.from_api_repr(field) for field in schema_json
-            ]
-    except json.JSONDecodeError as e:
-        print(f"❌ Error: Failed to parse JSON in {schema_path}: {e}")
-        sys.exit(1)
+        project_id = get_project_id()
+        # Log explicitly here since get_project_id logic was moved
+        LOGGER.info("ℹ️ Project ID resolved: %s", project_id)
 
-    # 4. CREATE the Table
-    table = bigquery.Table(table_ref, schema=schema)
-    try:
-        created_table = client.create_table(table)
-        print(f"✅ SUCCESS: Created table {created_table.full_table_id}")
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        # Catching generic exception is intended here to prevent raw tracebacks in CI logs
-        print(f"❌ Failed to create table: {e}")
+        bq_client = bigquery.Client(project=project_id)
+        create_table_logic(bq_client, dataset_id, table_id)  # type: ignore
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        LOGGER.exception("❌ Critical error during execution: %s", exc)
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    create_table_managed()
+    main()

@@ -15,10 +15,20 @@ spec:
     command:
     - cat
     tty: true
+    env:
+      # CRITICAL: Log immediati su Jenkins (no buffering)
+      - name: PYTHONUNBUFFERED
+        value: "1"
+      # Ottimizzazione: niente file .pyc (inutile in pod effimeri)
+      - name: PYTHONDONTWRITEBYTECODE
+        value: "1"
     resources:
       requests:
         memory: "512Mi"
         cpu: "500m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
 """
         }
     }
@@ -29,18 +39,19 @@ spec:
     }
     
     environment {
-        // We inject the Project ID so Python knows where to connect
+        // Iniettiamo il PROJECT_ID globale se disponibile
         PROJECT_ID = "${env.PROJECT_ID}" 
     }
 
     stages {
         stage('Install Deps') {
-        options {
-                retry(3) // <--- SPOSTATO QUI: Se PyPI è giù, ha senso riprovare
+            options {
+                retry(3) 
             }
             steps {
                 container('python') {
-                    sh 'pip install -r requirements.txt'
+                    // Best Practice: --no-cache-dir per risparmiare I/O e spazio nel pod
+                    sh 'pip install --no-cache-dir -r requirements.txt'
                 }
             }
         }
@@ -48,8 +59,15 @@ spec:
         stage('Run BigQuery App') {
             steps {
                 container('python') {
-                    // Inject the current Project ID dynamically
-                    sh "export PROJECT_ID=${PROJECT_ID} && python app/demo_pipeline.py"
+                    // Usiamo withEnv per iniettare le variabili in modo pulito
+                    // PROJECT_ID: serve allo script per connettersi a BQ
+                    // PYTHONPATH=.: serve a Python per trovare 'app.utils'
+                    withEnv([
+                        "PROJECT_ID=${PROJECT_ID}",
+                        "PYTHONPATH=."
+                    ]) {
+                        sh 'python app/demo_pipeline.py'
+                    }
                 }
             }
         }

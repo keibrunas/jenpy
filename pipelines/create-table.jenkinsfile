@@ -15,13 +15,20 @@ spec:
     command:
     - cat
     tty: true
+    env:
+      # CRITICAL: Log immediati, essenziale se lo script crasha
+      - name: PYTHONUNBUFFERED
+        value: "1"
+      # Ottimizzazione: niente file .pyc in container usa-e-getta
+      - name: PYTHONDONTWRITEBYTECODE
+        value: "1"
     resources:
-    requests:
-      memory: "256Mi"
-      cpu: "250m"
-    limits:
-      memory: "1Gi"   # Protegge il cluster da script Python che "mangiano" troppa RAM
-      cpu: "1000m"
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
 """
         }
     }
@@ -36,7 +43,6 @@ spec:
         string(name: 'TABLE_ID', defaultValue: 'users_table', description: 'Name of the table to create')
     }
     
-
     stages {
     /*NOTE: If you need to checkout code from GitHub, uncomment this stage. This is is useful if you need
              some custom checkout logic compared to the deafult that jenkins provides with github.
@@ -48,11 +54,12 @@ spec:
     */
         stage('Install Dependencies') {
             options {
-                retry(3) // <--- SPOSTATO QUI: Se PyPI è giù, ha senso riprovare
+                retry(3)
             }
             steps {
                 container('python') {
-                    sh 'pip install -r requirements.txt'
+                    // Qui usiamo requirements.txt standard (non dev) perché è un job operativo
+                    sh 'pip install --no-cache-dir -r requirements.txt'
                 }
             }
         }
@@ -60,10 +67,14 @@ spec:
         stage('Run Creation Script') {
             steps {
                 container('python') {
-                    // Pass inputs. The Python script uses these to find the correct JSON file.
-                    withEnv(["DATASET_ID=${params.DATASET_ID}", 
-                             "TABLE_ID=${params.TABLE_ID}"]) {
-                        sh 'python app/create_table.py'
+                    // Usiamo withEnv per passare variabili e PYTHONPATH in modo pulito
+                    withEnv([
+                        "DATASET_ID=${params.DATASET_ID}", 
+                        "TABLE_ID=${params.TABLE_ID}",
+                        "PYTHONPATH=." // Fondamentale per far funzionare 'from app.utils ...'
+                    ]) {
+                        // Comando pulitissimo
+                        sh "python app/create_table.py"
                     }
                 }
             }
