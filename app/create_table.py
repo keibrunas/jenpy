@@ -54,7 +54,7 @@ def create_table_logic(client: bigquery.Client, dataset_id: str, table_id: str) 
     schema_path = Path("config") / schema_filename
     LOGGER.info("   Schema Path: %s", schema_path)
 
-    # 1. Check existence
+    # 1. Check Table existence
     try:
         client.get_table(full_table_id)
         LOGGER.info("✅ Table '%s' already exists. No action taken.", full_table_id)
