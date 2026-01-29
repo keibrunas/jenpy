@@ -62,7 +62,7 @@ def create_table_logic(client: bigquery.Client, dataset_id: str, table_id: str) 
     except NotFound:
         LOGGER.info("✨ Table not found. Proceeding with creation...")
 
-    # 2. Load Schema and Create
+    # 2. Load Schema and Create Table
     schema = load_schema(schema_path)
     table = bigquery.Table(full_table_id, schema=schema)
     created_table = client.create_table(table)
