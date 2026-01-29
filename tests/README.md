@@ -22,7 +22,7 @@ The suite uses **Pytest** and **unittest.mock** to verify the code logic in comp
 ### Prerequisites
 Make sure you have installed the dependencies:
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
 ```
 

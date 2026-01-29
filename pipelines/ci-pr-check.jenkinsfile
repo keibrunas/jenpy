@@ -26,11 +26,74 @@ spec:
         }
     }
 
+    options {
+        // Evita che un job appeso blocchi tutto per sempre
+        timeout(time: 15, unit: 'MINUTES') 
+    }
+
     stages {
         stage('Install Deps') {
+            options {
+                retry(3) // <--- SPOSTATO QUI: Se PyPI è giù, ha senso riprovare
+            }
             steps {
                 container('python') {
-                    sh 'pip install --no-cache-dir -r requirements.txt'
+                    sh 'pip install --no-cache-dir -r requirements-dev.txt'
+                }
+            }
+        }
+
+        stage('Code Quality') {
+            steps {
+                container('python') {
+                    script {
+                        // =========================================================
+                        // 1. BLACK (Formatting) - UNSTABLE on failure
+                        // =========================================================
+                        echo "⚫ Starting Black formatting check..."
+                        
+                        // Run Black. 'returnStatus: true' prevents immediate pipeline failure.
+                        // Output is shown directly in the console.
+                        def blackExitCode = sh(script: 'black --check app/ tests/', returnStatus: true)
+                        
+                        if (blackExitCode != 0) {
+                            echo "⚠️ WARNING: Black found unformatted files (see output above)."
+                            echo "⚠️ Marking build as UNSTABLE."
+                            currentBuild.result = 'UNSTABLE'
+                        } else {
+                            echo "✅ Black formatting check passed."
+                        }
+
+                        // =========================================================
+                        // 2. PYLINT (Quality) - FAILURE if score < 9.0
+                        // =========================================================
+                        echo "🐍 Starting Pylint quality check (Threshold: 9.0)..."
+
+                        // TRICK: Use 'tee' to show output in console AND save to temp file for parsing.
+                        // '|| true' ensures the script doesn't die immediately if score is low.
+                        sh 'pylint app/*.py | tee pylint_temp.log || true'
+                        
+                        // Read the temp file just to extract the score
+                        def pylintOutput = readFile('pylint_temp.log').trim()
+                        
+                        // Regex to find the score (e.g., "Your code has been rated at 8.50/10")
+                        def match = (pylintOutput =~ /Your code has been rated at (-?\d+\.\d+)\/10/)
+                        
+                        if (match) {
+                            def score = match[0][1].toFloat()
+                            echo "📊 Detected Pylint Score: ${score}/10"
+
+                            if (score < 9.0) {
+                                echo "❌ CRITICAL ERROR: Score ${score} is below the 9.0 threshold."
+                                error("Pipeline failed due to low code quality (Score: ${score})")
+                            } else {
+                                echo "✅ Pylint check passed! Quality is within standards (Score: ${score})."
+                            }
+                        } else {
+                            // Fallback if Pylint crashes without printing a score
+                            error("❌ Critical: Unable to parse Pylint score. Check logs above for syntax errors.")
+                        }
+                    }
                 }
             }
         }
