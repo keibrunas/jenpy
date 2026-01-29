@@ -22,3 +22,11 @@ env/
 jenkins_home/
 
 .python-version
+
+# --- Testing & Coverage Artifacts ---
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+test-results.xml

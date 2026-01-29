@@ -61,9 +61,12 @@ spec:
             steps {
                 container('python') {
                     // Pass inputs. The Python script uses these to find the correct JSON file.
-                    withEnv(["DATASET_ID=${params.DATASET_ID}", 
-                             "TABLE_ID=${params.TABLE_ID}"]) {
-                        sh 'python app/create_table.py'
+                    withEnv([
+                        "DATASET_ID=${params.DATASET_ID}", 
+                        "TABLE_ID=${params.TABLE_ID}",
+                        "PYTHONPATH=."
+                    ]) {
+                        sh "python app/create_table.py"
                     }
                 }
             }

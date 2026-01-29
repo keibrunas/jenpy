@@ -48,10 +48,13 @@ spec:
         stage('Run BigQuery App') {
             steps {
                 container('python') {
-                    // Inject the current Project ID dynamically
-                    sh "export PROJECT_ID=${PROJECT_ID} && python app/demo_pipeline.py"
+                    // Usiamo withEnv per iniettare le variabili in modo pulito
+                    withEnv([
+                        "PROJECT_ID=${PROJECT_ID}",
+                        "PYTHONPATH=."
+                    ]) {
+                        sh 'python app/demo_pipeline.py'
+                    }
                 }
             }
         }
-    }
-}
