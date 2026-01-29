@@ -14,14 +14,22 @@ from app import demo_pipeline
 def test_ensure_dataset_creates_if_missing() -> None:
     """Test dataset creation when NotFound."""
     mock_client = MagicMock()
+    # FIX: Dobbiamo definire project come stringa, altrimenti DatasetReference fallisce
+    mock_client.project = "test-project"
+
     mock_client.get_dataset.side_effect = NotFound("Missing")
+
     demo_pipeline.ensure_dataset(mock_client, "ds_id")
+
     mock_client.create_dataset.assert_called_once()
 
 
 def test_ensure_dataset_exists() -> None:
     """Test dataset creation skipped if exists."""
     mock_client = MagicMock()
+    # FIX: Project ID stringa obbligatorio per DatasetReference
+    mock_client.project = "test-project"
+
     demo_pipeline.ensure_dataset(mock_client, "ds_id")
     mock_client.create_dataset.assert_not_called()
 
@@ -82,7 +90,6 @@ def test_run_pipeline_flow(
 
 
 @patch("app.demo_pipeline.run_pipeline")
-# Mockiamo il ritorno della funzione importata
 @patch("app.demo_pipeline.get_project_id", return_value="test-proj")
 def test_main_success(_mock_get_pid: MagicMock, mock_run: MagicMock) -> None:
     """Test main function success path."""

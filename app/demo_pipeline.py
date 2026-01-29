@@ -22,7 +22,9 @@ def ensure_dataset(
     client: bigquery.Client, dataset_id: str
 ) -> bigquery.DatasetReference:
     """Checks and creates the dataset if missing (Idempotent)."""
-    dataset_ref = client.dataset(dataset_id)
+    # FIX: Sostituiamo client.dataset() (Deprecato) con il costruttore diretto
+    dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
+
     try:
         client.get_dataset(dataset_ref)
         LOGGER.info("✅ Dataset exists: %s", dataset_id)
