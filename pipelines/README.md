@@ -138,23 +138,41 @@ spec:
 ```mermaid
 sequenceDiagram
     participant J as Jenkins Controller
-    participant K as Kubernetes
-    participant P as Agent Pod (Python)
-    participant G as Google Cloud
+    participant K as Kubernetes API
+    participant P as Pod (jnlp + python)
+    participant G as Google Cloud (BigQuery)
 
-    J->>K: "Spawn a clean Python 3.11 Pod"
-    K->>P: Creates Pod with env vars (UNBUFFERED)
-    P->>J: "Ready"
-    J->>P: "Pip Install (no cache)"
-    J->>P: "Run Checks (Black -> Pylint -> Pytest)"
-    alt Checks Pass
-        P->>G: Authenticates & Runs Logic
-        P-->>J: Exit Code 0
-    else Checks Fail
-        P-->>J: Exit Code 1 (Pipeline Stops)
-    end
-    J->>K: "Destroy Pod"
-    K->>P: Terminates Pod
+    Note over J,K: 1. Provisioning
+    J->>K: Request Agent (label: python-worker)
+    K-->>P: Schedule Pod
+    
+    Note right of K: Spawns 2 Containers:<br/>1. jnlp (Agent)<br/>2. python (Worker)
+
+    Note over P,J: 2. The Handshake (JNLP)
+    P->>J: JNLP Connection Request (TCP/WebSocket)
+    J-->>P: Connection Established
+    Note left of P: Pipeline resumes
+
+    Note over J,P: 3. Execution Phase
+    J->>P: Checkout Code (Git)
+    J->>P: Enter container('python')
+    
+    Note right of P: Context Switch:<br/>Commands run inside<br/>python container
+    
+    P->>P: pip install --no-cache-dir ...
+    P->>P: export PYTHONPATH=.
+    P->>P: python app/demo_pipeline.py
+
+    Note over P,G: 4. Cloud Interaction
+    P->>G: Auth (Workload Identity / SA)
+    P->>G: BigQuery Insert / Create Table
+    G-->>P: 200 OK
+    
+    P-->>J: Return Exit Code (0)
+    
+    Note over J,K: 5. Teardown
+    J->>K: Terminate Pod
+    K-->>P: Kill (SIGTERM)
 
 ```
 
