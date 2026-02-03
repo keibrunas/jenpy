@@ -24,7 +24,7 @@ kubectl create namespace jenkins || true
 echo "📄 Applying Manifests..."
 
 # We use 'envsubst' to replace ${PROJECT_ID} and ${IMAGE_URL} in the YAMLs
-# straight into kubectl (the for loop orders the file sfollowing the numerical prefix)
+# straight into kubectl (the for loop orders the file following the numerical prefix)
 for file in k8s/*.yaml; do
     echo "   - Applying $(basename $file)"
     envsubst < $file | kubectl apply -f -
