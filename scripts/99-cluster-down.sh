@@ -27,10 +27,10 @@ gcloud container clusters delete $CLUSTER_NAME \
 # 3. Cleanup Labeled Disks (Il metodo sicuro)
 echo "🏷️  Checking for orphaned disks with label 'managed-by=jenkins-script'..."    
 # Security filter to delete only disks linked to Jenkins and not in use:
-# - labels.managed-by=jenkins-script: Prende SOLO i nostri dischi
-# - -users:*: Removes only the incative ones (avoiding to remove a disk still in use)
+# - labels.managed-by=jenkins-script : gets only disks created by our script
+# - status=READY : excludes disks that are still attached to VMs (in use)
 TARGET_DISKS=$(gcloud compute disks list \
-    --filter="labels.managed-by=jenkins-script AND -users:*" \
+    --filter="labels.managed-by=jenkins-script status=READY" \
     --zones $ZONE \
     --format="value(name)" 2>/dev/null)
 
