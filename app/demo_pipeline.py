@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 """
 Demo pipeline for inserting data into BigQuery.
 Optimized for Container execution (UTC timestamps, Logging) and Testability.
 """
-# commento siccome mi piace litigare con me stesso
+# Comment: I like to argue with myself
 
 import datetime
 import os
