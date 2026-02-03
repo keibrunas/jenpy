@@ -2,6 +2,7 @@
 Demo pipeline for inserting data into BigQuery.
 Optimized for Container execution (UTC timestamps, Logging) and Testability.
 """
+#commento
 
 import datetime
 import os
