@@ -1,0 +1,15 @@
+# To create a StorageClass with specific labels for cost tracking
+# Should be applied before creating PersistentVolumeClaims that use it
+# Therefore the storage class yaml file should begin with 00-<>.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: labeled-standard
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: pd-balanced
+  # The labels to apply to the underlying GCP Persistent Disks
+  labels: "env=demo,managed-by=jenkins-script"
+volumeBindingMode: WaitForFirstConsumer
