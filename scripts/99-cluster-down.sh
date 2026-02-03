@@ -30,7 +30,7 @@ echo "🏷️  Checking for orphaned disks with label 'managed-by=jenkins-script
 # - labels.managed-by=jenkins-script: Prende SOLO i nostri dischi
 # - -users:*: Removes only the incative ones (avoiding to remove a disk still in use)
 TARGET_DISKS=$(gcloud compute disks list \
-    --filter="labels.managed-by=jenkins-script AND -users:*" \
+    --filter="labels.managed-by=jenkins-script status=READY" \
     --zones $ZONE \
     --format="value(name)" 2>/dev/null)
 
