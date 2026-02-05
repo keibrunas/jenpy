@@ -38,7 +38,7 @@ def ensure_table(client: bigquery.Client, table_ref: bigquery.TableReference) ->
     """Checks and creates the table if missing using a hardcoded schema."""
     try:
         client.get_table(table_ref)
-        LOGGER.info(" Table exists: %s", table_ref.table_id)
+        LOGGER.info("✅ Table exists: %s", table_ref.table_id)
     except NotFound:
         LOGGER.info("📄 Creating Table: %s", table_ref.table_id)
         schema = [
